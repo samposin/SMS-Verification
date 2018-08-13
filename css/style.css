@@ -1,0 +1,20 @@
+
+	.ps_indicator,.ps_login_indicator,.ps_ask_mobile_indicator,.ps_forgot_password_indicator,.ps_ask_email_indicator{
+		display:none;
+	}
+
+	.result-message,.login-result-message,.ask-mobile-result-message,.forgot-password-result-message,.ask-email-result-message{
+		display:none;
+	}
+
+	.ps-success{
+		color:GREEN;
+	}
+
+	.ps-danger{
+		color:RED;
+	}
+
+	.ps-form-cont{
+		display:none;
+	}
