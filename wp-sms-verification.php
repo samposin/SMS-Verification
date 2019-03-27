@@ -1,7 +1,6 @@
 <?php
 /*
 Plugin Name: SMS Verification
-Plugin URI: http://www.test.com
 Description: Now user can use mobile number as their username with WordPress. SMS verification is using Twilio. Making "Forgot password" functionality easy, OTP over Mobile will be the new Password
 Version: 0.1 BETA
 Author: Santosh Carpenter
@@ -303,11 +302,11 @@ Author URI: https://github.com/samposin
 		if ( is_wp_error( $reg_errors ) ) {
 
 		    foreach ( $reg_errors->get_error_messages() as $error ) {
-
+			// --- For Testing Purpose only.
 		        //echo '<div>';
-		       // echo '<strong>ERROR</strong>:';
+		        // echo '<strong>ERROR</strong>:';
 		        //echo $error . '<br/>';
-		       // echo '</div>';
+		        // echo '</div>';
 
 		    }
 
@@ -315,64 +314,39 @@ Author URI: https://github.com/samposin
 	}
 
 
-	/**
-	 * New User registration
-	 *
-	 */
+
 	function ps_reg_new_user() {
-
 		global $reg_errors,$twilio_sid,$twilio_token,$twilio_from_no;
-
 		$result=array('success'=>false,'msg'=>'');
-
-	    // Verify nonce
-	    //if( !isset( $_POST['nonce'] ) || !wp_verify_nonce( $_POST['nonce'], 'ps_new_user' ) )
-	        //die( 'Ooops, something went wrong, please try again later.' );
-
 		$code = rand( 1000, 9999 );
-
-	    // Post values
-	    //$username = $_POST['user'];
-	    $username = $_POST['mail'];
-	    //$password = $_POST['pass'];
-	    $password = $code;
-	    $email    = $_POST['mail'];
-	    $mobile    = $_POST['mobile'];
-	    //$name     = $_POST['name'];
-	    //$nick     = $_POST['nick'];
-
-	    registration_validation($email, $mobile);
+		$username = $_POST['mail'];
+		$password = $code;
+		$email    = $_POST['mail'];
+	    	$mobile    = $_POST['mobile'];	    
+	    	registration_validation($email, $mobile);
 
 	    /**
-	     * IMPORTANT: You should make server side validation here!
-	     *
-	     */
+	     * IMPORTANT: You should make server side validation here
+	    */
+	if ( 1 > count( $reg_errors->get_error_messages() ) ){
+		try {
+			$client = new Twilio\Rest\Client($twilio_sid, $twilio_token);
+			$message = $client->messages->create(
+		        //'+918871577510', // Text this number
+		        $mobile, // Text this number
+		        array(
+		            'from' => $twilio_from_no, // From a valid Twilio number
+		            'body' => 'Password is '.$code
+		        )
+			);
+			$userdata = array(
+				'user_email' => $email,
+				'user_login' => $username,
+				'user_pass' => $password,
+			);
 
-		if ( 1 > count( $reg_errors->get_error_messages() ) )
-		{
-
-			try {
-
-				$client = new Twilio\Rest\Client($twilio_sid, $twilio_token);
-
-				$message = $client->messages->create(
-			        //'+918871577510', // Text this number
-			        $mobile, // Text this number
-			        array(
-			            'from' => $twilio_from_no, // From a valid Twilio number
-			            'body' => 'Password is '.$code
-			        )
-				);
-
-				$userdata = array(
-					'user_email' => $email,
-					'user_login' => $username,
-					'user_pass' => $password,
-				);
-
-				$user_id = wp_insert_user($userdata);
-
-				// Return
+			$user_id = wp_insert_user($userdata);
+			// Return
 			    if( !is_wp_error($user_id) ) {
 			        update_user_meta( $user_id, 'mobile', $mobile );
 			        $result['success']=true;
@@ -410,31 +384,20 @@ Author URI: https://github.com/samposin
 	    header('Content-type: application/json');
         echo json_encode($result);
 		die();
-
 	}
-
 	add_action('wp_ajax_register_user', 'ps_reg_new_user');
 	add_action('wp_ajax_nopriv_register_user', 'ps_reg_new_user');
-
-
 	function ps_login_user()
 	{
-
-		//wp_mail('sam1.posin@gmail.com', "Mobile no attached to your account", "Message");
-
-		global $wpdb;
-
-		$result=array('success'=>false,'msg'=>'');
-
-		//We shall SQL escape all inputs
-	    $login_user = $_POST['login_user'];
-	    $login_pass = $_POST['login_pass'];
-	    //$remember = $wpdb->escape($_REQUEST['rememberme']);
-	    $remember=true;
-	    if($remember) $remember = "true";
-        else $remember = "false";
-
-		//echo '<pre>';
+	//wp_mail('sam.posin@gmail.com', "Mobile no attached to your account", "Message");
+	global $wpdb;
+	$result=array('success'=>false,'msg'=>'');
+	//We shall SQL escape all inputs
+	$login_user = $_POST['login_user'];
+	$login_pass = $_POST['login_pass'];
+	$remember=true;
+		if($remember) $remember = "true";
+        	else $remember = "false";
 		$u1=get_users(
 	        array(
 	            'meta_key' => 'mobile',
@@ -458,18 +421,10 @@ Author URI: https://github.com/samposin
 					wp_clear_auth_cookie();
 					wp_set_current_user($u->ID);
 					wp_set_auth_cookie($u->ID);
-
-					/*
-					//$redirect_to = user_admin_url();
-					//wp_safe_redirect($redirect_to);
-					//exit();
-					*/
-
 					$result['success']=true;
 					$result['login']=true;
 					$result['ask_mobile']=false;
 					$result['url']=get_site_url();
-
 				}
 				else
 				{
@@ -487,7 +442,7 @@ Author URI: https://github.com/samposin
 		}
 		else
 		{
-			$login_data = array();
+		    $login_data = array();
 		    $login_data['user_login'] = $login_user;
 		    $login_data['user_password'] = $login_pass;
 		    $login_data['remember'] = $remember;
@@ -591,7 +546,7 @@ Author URI: https://github.com/samposin
 				        )
 					);
 
-					wp_set_password( $code, $u->ID );
+				wp_set_password( $code, $u->ID );
 			        update_user_meta( $u->ID, 'mobile', $mobile );
 
 	//echo '<pre>';
@@ -623,28 +578,20 @@ Author URI: https://github.com/samposin
 		        $result['errors'][]="User not found. Please login again.";
 		    }
 	    }
-
-
-
-		header('Content-type: application/json');
+	header('Content-type: application/json');
         echo json_encode($result);
 		die();
 	}
-
 	add_action('wp_ajax_ask_mobile', 'ps_ask_mobile');
 	add_action('wp_ajax_nopriv_ask_mobile', 'ps_ask_mobile');
-
 	function ps_forgot_password()
 	{
 		global $wpdb,$twilio_sid,$twilio_token,$reg_errors,$twilio_from_no;
 		$reg_errors = new WP_Error;
-
 		$result=array('success'=>false,'msg'=>'');
-
 		//We shall SQL escape all inputs
 	    $mobile = $_POST['mobile'];
 	    $code = rand( 1000, 9999 );
-
 	    if ( empty( $mobile )){
 			 $result['errors'][]="Please provide mobile no.";
 		}
@@ -660,17 +607,13 @@ Author URI: https://github.com/samposin
 		            'count_total' => false
 		        )
 		    );
-
-
 			if(count($u1)>0)
 			{
 				$u = $u1[0];
 				if ($u)
 				{
 					try {
-
 						$client = new Twilio\Rest\Client($twilio_sid, $twilio_token);
-
 						$message = $client->messages->create(
 				            //'+918871577510', // Text this number
 				            $mobile, // Text this number
@@ -786,14 +729,10 @@ Author URI: https://github.com/samposin
 			//echo '<pre>';
 			//print_r($u);
 		}
-
 		header('Content-type: application/json');
-        echo json_encode($result);
+	        echo json_encode($result);
 		die();
-
 	}
-
-
 	add_action('wp_ajax_ps_ask_email', 'ps_ask_email');
 	add_action('wp_ajax_nopriv_ps_ask_email', 'ps_ask_email');
 ?>
